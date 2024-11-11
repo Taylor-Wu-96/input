@@ -1,0 +1,56 @@
+name: Build and Deploy to Repo B
+
+on:
+  push:
+    branches:
+      - main  # Trigger on commits to the main branch
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the code from Repo A
+      - name: Checkout Repo A
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'  # Use the appropriate Node version for your project
+
+      # Step 3: Install dependencies and build
+      - name: Install and Build
+        run: |
+          npm install
+          npm run build
+
+      # Step 4: Prepare to push to Repo B
+      - name: Set up Git for Repo B
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      # Step 5: Push build files to Repo B
+      - name: Push to Repo B
+        env:
+          REPO_B: git@github.com:Taylor-Wu-96/input.git  # Update with Repo B's SSH URL
+          SSH_KEY: ${{ secrets.SSH_KEY }}                # SSH private key stored in secrets
+        run: |
+          # Add SSH key to the agent
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+          # Clone Repo B and copy build files
+          git clone "$REPO_B" repo-b
+          rm -rf repo-b/*                                    # Remove old files in Repo B
+          cp -r dist/* repo-b/                              # Copy new build files
+
+          # Commit and push to Repo B
+          cd repo-b
+          git add .
+          git commit -m "Deploying build from Repo A"
+          git push origin main                               # Change branch if needed
