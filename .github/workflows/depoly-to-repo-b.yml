@@ -16,17 +16,22 @@ jobs:
 
       # Step 2: Set up Node.js
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'  # Use the appropriate Node version for your project
+          node-version: '18'  # Use the appropriate Node version for your project
 
       # Step 3: Install dependencies and build
       - name: Install and Build
         run: |
           npm install
           npm run build
+      # Step 4: Prepare to push to Repo B
+      - name: Set up Git for Repo B
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      # Step 4: Set up SSH for Repo B
+      # Step 5: Set up SSH for Repo B
       - name: Set up SSH Key
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}  # The SSH private key stored in secrets
@@ -45,7 +50,7 @@ jobs:
           # Add GitHub to known hosts to prevent authenticity prompt
           ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
-      # Step 5: Push build files to Repo B
+      # Step 6: Push build files to Repo B
       - name: Push to Repo B
         env:
           REPO_B: git@github.com:Taylor-Wu-96/output.git  # Update with Repo B's SSH URL
