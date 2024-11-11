@@ -55,7 +55,7 @@ jobs:
 
           # Remove old files in Repo B and copy new build files
           rm -rf repo-b/*
-          cp -r build/* repo-b/
+          cp -r dist/* repo-b/
 
           # Commit and push to Repo B
           cd repo-b
