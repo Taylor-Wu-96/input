@@ -16,9 +16,9 @@ jobs:
 
       # Step 2: Set up Node.js
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: '18'  # Use the appropriate Node version for your project
+          node-version: '16'  # Use the appropriate Node version for your project
 
       # Step 3: Install dependencies and build
       - name: Install and Build
@@ -26,28 +26,33 @@ jobs:
           npm install
           npm run build
 
-      # Step 4: Prepare to push to Repo B
-      - name: Set up Git for Repo B
+      # Step 4: Set up SSH for Repo B
+      - name: Set up SSH Key
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}  # The SSH private key stored in secrets
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Start the SSH agent
+          eval "$(ssh-agent -s)"
+          
+          # Add SSH key and configure permissions
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-add ~/.ssh/id_rsa
+          
+          # Add GitHub to known hosts to prevent authenticity prompt
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
       # Step 5: Push build files to Repo B
       - name: Push to Repo B
         env:
-          REPO_B: git@github.com:Taylor-Wu-96/input.git  # Update with Repo B's SSH URL
-          SSH_KEY: ${{ secrets.SSH_KEY }}                # SSH private key stored in secrets
+          REPO_B: git@github.com:Taylor-Wu-96/output.git  # Update with Repo B's SSH URL
         run: |
-          # Add SSH key to the agent
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-          # Clone Repo B and copy build files
+          # Clone Repo B
           git clone "$REPO_B" repo-b
-          rm -rf repo-b/*                                    # Remove old files in Repo B
-          cp -r dist/* repo-b/                              # Copy new build files
+
+          # Remove old files in Repo B and copy new build files
+          rm -rf repo-b/*
+          cp -r build/* repo-b/
 
           # Commit and push to Repo B
           cd repo-b
